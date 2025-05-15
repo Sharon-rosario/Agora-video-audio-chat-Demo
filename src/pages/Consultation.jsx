@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ChatPanel from '../components/ChatPanel';
 import AudioPanel from '../components/AudioPanel';
@@ -12,6 +12,10 @@ const Consultation = () => {
   const [activePanel, setActivePanel] = useState('chat');
   const [showPopup, setShowPopup] = useState(false);
   const [callType, setCallType] = useState(null);
+  const [splitPosition, setSplitPosition] = useState(50); // Default split 50%
+  const dividerRef = useRef(null);
+  const containerRef = useRef(null);
+  const isDraggingRef = useRef(false);
 
   useEffect(() => {
     const state = location.state;
@@ -19,6 +23,46 @@ const Consultation = () => {
       setPatientName(state.patientName);
     }
   }, [location]);
+
+  useEffect(() => {
+    // Set up event listeners for dragging
+    const handleMouseMove = (e) => {
+      if (!isDraggingRef.current) return;
+      
+      const container = containerRef.current;
+      if (!container) return;
+      
+      const containerRect = container.getBoundingClientRect();
+      const newPosition = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      
+      // Limit the drag range (10% to 90%)
+      const limitedPosition = Math.min(Math.max(newPosition, 10), 90);
+      setSplitPosition(limitedPosition);
+    };
+    
+    const handleMouseUp = () => {
+      isDraggingRef.current = false;
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
+    };
+    
+    if (activePanel === 'audio' || activePanel === 'video') {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [activePanel]);
+
+  const handleMouseDown = (e) => {
+    isDraggingRef.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none'; // Prevent text selection while dragging
+    e.preventDefault();
+  };
 
   const handleCallAction = (type) => {
     setCallType(type);
@@ -37,7 +81,7 @@ const Consultation = () => {
   return (
     <div className="h-screen bg-[#ECE5DD] flex flex-col">
       {/* Header */}
-      <div className="bg-[#075E54] text-white p-4 flex items-center justify-between shadow-md">
+      <div className="bg-[#075E54] text-white p-4 flex items-center justify-between shadow-md fixed top-0 left-0 right-0 z-10">
         <div className="flex items-center">
           <button className="mr-4" onClick={() => navigate(-1)}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -74,10 +118,51 @@ const Consultation = () => {
       </div>
 
       {/* Consultation Body */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-        <ChatPanel />
-        {activePanel === 'audio' && <AudioPanel onEndCall={endCall} />}
-        {activePanel === 'video' && <VideoPanel onEndCall={endCall} />}
+      <div 
+        ref={containerRef}
+        className="flex-1 flex flex-row mt-16 relative overflow-hidden"
+      >
+        {/* Chat Panel - full width by default, or dynamic width when in call */}
+        <div 
+          className="h-full p-4"
+          style={{
+            width: activePanel === 'chat' 
+              ? '100%' 
+              : `${splitPosition}%`
+          }}
+        >
+          <ChatPanel />
+        </div>
+
+        {/* Divider when in split mode */}
+        {(activePanel === 'audio' || activePanel === 'video') && (
+          <div 
+            ref={dividerRef}
+            className="w-2 my-4 bg-gray-300 rounded-xl hover:bg-gray-400 cursor-col-resize flex items-center justify-center"
+            onMouseDown={handleMouseDown}
+          >
+            <div className="h-8 w-1 bg-gray-500 rounded"></div>
+          </div>
+        )}
+
+        {/* Media Panel - only shown when in call */}
+        {activePanel === 'audio' && (
+          <div 
+            className="h-full p-4"
+            style={{ width: `calc(100% - ${splitPosition}% - 0.5rem)` }}
+          >
+            <AudioPanel onEndCall={endCall} />
+          </div>
+        )}
+        
+        {activePanel === 'video' && (
+          <div 
+            className="h-full p-4"
+            style={{ width: `calc(100% - ${splitPosition}% - 0.5rem)` }}
+          >
+            <VideoPanel onEndCall={endCall} />
+          </div>
+        )}
       </div>
 
       {/* Call Popup */}

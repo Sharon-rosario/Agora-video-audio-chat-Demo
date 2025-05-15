@@ -1,28 +1,85 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import MessageWrapper from './chat/MessageWrapper';
 
 const dummyMessages = [
-  { sender: 'Sharon', message: 'Hey, how are you?', time: '10:30 AM' },
-  { sender: 'You', message: 'I am good, thanks!', time: '10:31 AM' },
-  { sender: 'Sharon', message: 'Can we reschedule our appointment?', time: '10:32 AM' },
-  { sender: 'You', message: 'Sure, when would you like to reschedule it to?', time: '10:33 AM' },
+  { sender: 'Sharon', type: 'text', content: 'Hi Dr. Smith! I’ve been feeling a bit off lately.', time: '9:00 AM', tagged: false },
+  { sender: 'You', type: 'text', content: 'Sorry to hear that, Sharon. Can you describe your symptoms?', time: '9:02 AM', tagged: false },
+  { sender: 'Sharon', type: 'text', content: 'I’ve had a headache and some fatigue for a few days.', time: '9:05 AM', tagged: true },
+  { sender: 'You', type: 'audio', content: { url: 'audio1.mp3', duration: '0:45' }, time: '9:07 AM', tagged: false },
+  { sender: 'Sharon', type: 'text', content: 'Thanks for the voice note. I also have a slight fever.', time: '9:10 AM', tagged: false },
+  { sender: 'You', type: 'text', content: 'Okay, let’s monitor that. Have you taken any medication?', time: '9:12 AM', tagged: false },
+  { sender: 'Sharon', type: 'file', content: { url: 'blood_test.pdf', name: 'Blood_Test_Result.pdf' }, time: '9:15 AM', tagged: true },
+  { sender: 'You', type: 'text', content: 'Thanks for sharing the report. I’ll review it soon.', time: '9:17 AM', tagged: false },
+  { sender: 'Sharon', type: 'text', content: 'Also, here’s a picture of my medication.', time: '9:20 AM', tagged: false },
+  { sender: 'Sharon', type: 'doc', content: { url: 'medication_list.docx', name: 'Medication_List.docx' }, time: '9:21 AM', tagged: false },
+  { sender: 'You', type: 'text', content: 'Got it. Can you confirm the dosage of Paracetamol?', time: '9:23 AM', tagged: true },
+  { sender: 'Sharon', type: 'text', content: 'It’s 500mg, twice daily.', time: '9:25 AM', tagged: false },
+  { sender: 'You', type: 'video', content: { url: 'instruction.mp4', duration: '1:30' }, time: '9:28 AM', tagged: false },
+  { sender: 'Sharon', type: 'text', content: 'Thanks for the video! That’s helpful.', time: '9:30 AM', tagged: false },
+  { sender: 'You', type: 'text', content: 'Great. Any other symptoms like cough or sore throat?', time: '9:32 AM', tagged: false },
+  { sender: 'Sharon', type: 'text', content: 'Just a mild cough, nothing major.', time: '9:35 AM', tagged: false },
+  { sender: 'You', type: 'text', content: 'Alright, I’ll prescribe something for that. Check this.', time: '9:37 AM', tagged: false },
+  { sender: 'You', type: 'doc', content: { url: 'prescription.docx', name: 'Prescription.docx' }, time: '9:38 AM', tagged: true },
+  { sender: 'Sharon', type: 'text', content: 'Got it. Should I start this today?', time: '9:40 AM', tagged: false },
+  { sender: 'You', type: 'text', content: 'Yes, start today and let me know how you feel tomorrow.', time: '9:42 AM', tagged: false },
+  { sender: 'Sharon', type: 'audio', content: { url: 'audio2.mp3', duration: '0:30' }, time: '9:45 AM', tagged: false },
+  { sender: 'You', type: 'text', content: 'Thanks for the update. I’ll check in tomorrow.', time: '9:47 AM', tagged: false },
+  { sender: 'Sharon', type: 'text', content: 'Appreciate it, Dr. Smith!', time: '9:50 AM', tagged: false },
+  { sender: 'Sharon', type: 'text', content: 'By the way, I forgot to mention I had some nausea this morning.', time: '9:52 AM', tagged: false },
+  { sender: 'You', type: 'text', content: 'Noted. Let’s add an anti-nausea medication to your prescription.', time: '9:55 AM', tagged: false },
+  { sender: 'You', type: 'doc', content: { url: 'updated_prescription.docx', name: 'Updated_Prescription.docx' }, time: '9:56 AM', tagged: true },
+  { sender: 'Sharon', type: 'text', content: 'Thank you! I’ll pick it up later today.', time: '9:58 AM', tagged: false },
 ];
 
+
 const ChatPanel = () => {
+  const chatEndRef = useRef(null);
+
+  // Scroll to the bottom whenever messages change
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [dummyMessages]);
+
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md h-full overflow-y-auto">
-      <h3 className="text-lg font-semibold mb-4">Chat</h3>
-      {dummyMessages.map((msg, index) => (
-        <div
-          key={index}
-          className={`mb-4 p-3 rounded-lg ${
-            msg.sender === 'You' ? 'bg-[#DCF8C6] ml-auto' : 'bg-white'
-          }`}
-          style={{ maxWidth: '70%' }}
-        >
-          <p className="text-sm">{msg.message}</p>
-          <span className="text-xs text-gray-500">{msg.time}</span>
-        </div>
-      ))}
+    // Full height container: adjust if parent provides constrained height
+    <div className="flex flex-col h-full">
+
+      {/* Chat area with custom styled scrollbar */}
+      <div
+        className="flex-1 overflow-y-auto p-4 bg-[#ECE5DD] scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 hover:scrollbar-thumb-gray-500"
+      >
+        {dummyMessages.map((msg, index) => (
+          <MessageWrapper key={index} message={msg} />
+        ))}
+        <div ref={chatEndRef} />
+      </div>
+
+      {/* Footer inside the panel */}
+      <div className="bg-[#F0F2F5] p-3 flex items-center shadow-md">
+        <input
+          type="text"
+          placeholder="Type a message..."
+          className="flex-1 bg-white rounded-full px-4 py-2 text-sm focus:outline-none shadow-sm"
+        />
+        <button className="p-2 mx-2">
+          {/* Attachment Icon */}
+          <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 002.828 2.828l6.586-6.586a4 4 0 00-5.656-5.656l-6.586 6.586a6 6 0 008.485 8.485l6.586-6.586" />
+          </svg>
+        </button>
+        <button className="p-2">
+          {/* Microphone Icon */}
+          <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        </button>
+        <button className="p-2">
+          {/* Send Icon */}
+          <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 };
