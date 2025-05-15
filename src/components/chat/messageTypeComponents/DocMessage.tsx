@@ -112,9 +112,9 @@ const DocMessage = ({ message }) => {
         </div>
       </div>
       
-      <div className="self-end mt-1">
+      {/* <div className="self-end mt-1">
         <span className="text-xs text-gray-500">{message.time}</span>
-      </div>
+      </div> */}
     </div>
   );
 };

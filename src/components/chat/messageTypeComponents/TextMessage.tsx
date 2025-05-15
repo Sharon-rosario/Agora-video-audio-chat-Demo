@@ -20,8 +20,8 @@ const TextMessage = ({ message, onDelete, onTag, onReply }) => {
       <p className="text-sm text-gray-800">{message.content}</p>
 
       {/* Footer: Time, Status, Menu */}
-      <div className="self-end mt-1 flex items-center space-x-1">
-        <span className="text-xs text-gray-500">{message.time}</span>
+      {/* <div className="self-end mt-1 flex items-center space-x-1">
+        <span className="text-xs text-gray-500">{message.time}</span> */}
 
         {/* Read/Delivered/Other Status Icons */}
         {/* {message.status && (
@@ -43,7 +43,7 @@ const TextMessage = ({ message, onDelete, onTag, onReply }) => {
         )} */}
 
         {/* 3-dot menu */}
-        <div className="relative ml-1" ref={menuRef}>
+        {/* <div className="relative ml-1" ref={menuRef}>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="text-gray-600 hover:text-gray-800 focus:outline-none"
@@ -56,8 +56,8 @@ const TextMessage = ({ message, onDelete, onTag, onReply }) => {
               <button onClick={() => onDelete?.(message)} className="w-full text-left px-4 py-2 my-[1px] rounded text-red-600 hover:bg-gray-200">Delete</button>
             </div>
           )}
-        </div>
-      </div>
+        </div> */}
+      {/* </div> */}
     </div>
   );
 };
