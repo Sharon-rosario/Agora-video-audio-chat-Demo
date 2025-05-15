@@ -12,7 +12,7 @@ const Consultation = () => {
   const [activePanel, setActivePanel] = useState('chat');
   const [showPopup, setShowPopup] = useState(false);
   const [callType, setCallType] = useState(null);
-  const [splitPosition, setSplitPosition] = useState(50); // Default split 50%
+  const [splitPosition, setSplitPosition] = useState(40);
   const dividerRef = useRef(null);
   const containerRef = useRef(null);
   const isDraggingRef = useRef(false);

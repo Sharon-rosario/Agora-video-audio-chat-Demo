@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 // Static patient data
 const patients = [
-  { id: 1, name: 'Sharon', lastMessage: 'Hey, how are you?', time: '10:30 AM', active: true },
+  { id: 1, name: 'Patient 1 ', lastMessage: 'Hey, how are you?', time: '10:30 AM', active: true },
   { id: 2, name: 'Jane Smith', lastMessage: 'Appointment tomorrow?', time: '9:15 AM', active: false },
   { id: 3, name: 'Michael Brown', lastMessage: 'Thanks for the update!', time: 'Yesterday', active: false },
   { id: 4, name: 'Emily Davis', lastMessage: 'Can we reschedule?', time: 'Yesterday', active: false },
