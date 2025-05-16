@@ -5,6 +5,9 @@ import VideoMessage from './messageTypeComponents/VideoMessage.tsx';
 import FileMessage from './messageTypeComponents/FileMessage.tsx';
 import DocMessage from './messageTypeComponents/DocMessage.tsx';
 
+// Single‑source design tokens 👉 edit src/ChatTheme.js to reskin the whole chat
+import {ChatTheme} from '../../constants/theme.js';
+
 const MessageWrapper = ({ message, onReply, onDelete }) => {
   const { sender, type, tagged, timestamp } = message;
   const isYou = sender === 'You';
@@ -18,26 +21,36 @@ const MessageWrapper = ({ message, onReply, onDelete }) => {
         setMenuOpen(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Layout & utility classes stay as Tailwind — colours come from the ChatTheme object
   const baseClass = 'mb-1 p-3 rounded-xl shadow-sm max-w-[70%] relative';
-  const senderClass = isYou ? 'bg-[#DCF8C6]' : 'bg-white';
-  const taggedClass = tagged ? 'border-l-4 border-blue-500' : '';
   const alignmentClass = isYou ? 'ml-auto' : '';
+
+  // Inline style so that switching ChatTheme objects recolours every bubble instantly
+  const bubbleStyle = {
+    backgroundColor: isYou ? ChatTheme.bubbleMe : ChatTheme.bubbleOthers,
+    ...(tagged ? { borderLeft: `4px solid ${ChatTheme.taggedBorder}` } : {}),
+  };
 
   const getAvatar = () => {
     if (isYou) {
-      return "https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg";
+      return 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg';
     } else {
       const avatarMap = {
-        'Dr. Smith': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-2695-fe0f.svg',
-        'Nurse Johnson': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f469-200d-2695-fe0f.svg',
-        'Dr. Williams': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f468-200d-2695-fe0f.svg',
-        'Receptionist': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-1f4bc.svg'
+        'Dr. Smith':
+          'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-2695-fe0f.svg',
+        'Nurse Johnson':
+          'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f469-200d-2695-fe0f.svg',
+        'Dr. Williams':
+          'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f468-200d-2695-fe0f.svg',
+        Receptionist:
+          'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-1f4bc.svg',
       };
-      return avatarMap[sender] || 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg';
+      return avatarMap[sender] ||
+        'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg';
     }
   };
 
@@ -64,27 +77,34 @@ const MessageWrapper = ({ message, onReply, onDelete }) => {
 
   return (
     <div className={`flex items-end mb-4 ${isYou ? 'justify-end' : 'justify-start'}`}>
+      {/* Avatar (left for others) */}
       {!isYou && (
         <div className="flex-shrink-0 mr-2">
-          <img src={getAvatar()} alt={`${sender} avatar`} className="w-8 h-8 rounded-full" />
+          <img
+            src={getAvatar()}
+            alt={`${sender} avatar`}
+            className="w-8 h-8 rounded-full"
+          />
         </div>
       )}
 
-      <div className={`${baseClass} ${senderClass} ${taggedClass} ${alignmentClass}`}>
+      {/* Message bubble */}
+      <div className={`${baseClass} ${alignmentClass}`} style={bubbleStyle}>
         {!isYou && (
           <p className="text-xs font-medium text-gray-700 mb-1">{sender}</p>
         )}
 
         <MessageComponent message={message} />
 
-        {/* Timestamp and 3-dot menu */}
-        <div className="flex items-center justify-end mt-3 text-xs text-gray-600">
+        {/* Timestamp & menu */}
+        <div className="flex items-center justify-end mt-3 text-xs" style={{ color: ChatTheme.timeStamp }}>
           <span>{timestamp || '12:45 PM'}</span>
 
+          {/* 3‑dot menu */}
           <div className="relative ml-1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="text-gray-600 text-[15px] hover:text-gray-800 focus:outline-none"
+              className="text-[15px] hover:text-gray-800 focus:outline-none"
             >
               &#8942;
             </button>
@@ -97,10 +117,10 @@ const MessageWrapper = ({ message, onReply, onDelete }) => {
                     setMenuOpen(false);
                   }}
                   className="w-full text-left px-4 py-2 my-[1px] rounded hover:bg-gray-300"
+                  style={{ '--tw-bg-opacity': 1, backgroundColor: ChatTheme.hoverNeutral }}
                 >
                   Reply
                 </button>
-      
 
                 <button
                   onClick={() => {
@@ -108,6 +128,7 @@ const MessageWrapper = ({ message, onReply, onDelete }) => {
                     setMenuOpen(false);
                   }}
                   className="w-full text-left px-4 py-2 rounded text-red-600 hover:bg-gray-200"
+                  style={{ '--tw-bg-opacity': 1, backgroundColor: ChatTheme.hoverDanger }}
                 >
                   Delete
                 </button>
@@ -117,6 +138,7 @@ const MessageWrapper = ({ message, onReply, onDelete }) => {
         </div>
       </div>
 
+      {/* Avatar (right for you) */}
       {isYou && (
         <div className="flex-shrink-0 ml-2">
           <img src={getAvatar()} alt="Your avatar" className="w-8 h-8 rounded-full" />

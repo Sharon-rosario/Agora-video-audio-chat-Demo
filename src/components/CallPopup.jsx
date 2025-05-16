@@ -1,32 +1,48 @@
+// src/call/CallPopup.jsx
 import React from 'react';
+import { CallPopupTheme } from '../constants/theme';
 
-const CallPopup = ({ callType, onStartCall, onCancel }) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg">
-        <h3 className="text-lg font-semibold mb-4">
-          {callType === 'audio' ? 'Start Audio Call' : 'Start Video Call'}
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Are you sure you want to start a {callType} call?
-        </p>
-        <div className="flex justify-end space-x-4">
-          <button
-            className="bg-gray-300 text-gray-700 px-4 py-2 rounded-full"
-            onClick={onCancel}
-          >
-            Cancel
-          </button>
-          <button
-            className="bg-green-500 text-white px-4 py-2 rounded-full"
-            onClick={onStartCall}
-          >
-            Start Call
-          </button>
-        </div>
+const cp = CallPopupTheme;
+
+const CallPopup = ({ callType = 'audio', onStartCall, onCancel }) => (
+  <div
+    className="fixed inset-0 flex items-center justify-center z-50"
+    style={{ backgroundColor: cp.overlay }}
+  >
+    <div
+      className="p-6 rounded-lg shadow-lg w-80"
+      style={{ backgroundColor: cp.cardBg }}
+    >
+      <h3
+        className="text-lg font-semibold mb-4"
+        style={{ color: cp.headingColor }}
+      >
+        {callType === 'audio' ? 'Start Audio Call' : 'Start Video Call'}
+      </h3>
+
+      <p className="mb-4" style={{ color: cp.descriptionColor }}>
+        Are you sure you want to start a&nbsp;{callType}&nbsp;call?
+      </p>
+
+      <div className="flex justify-end space-x-4">
+        <button
+          onClick={onCancel}
+          className="px-4 py-2 rounded-full"
+          style={{ backgroundColor: cp.cancelBg, color: cp.cancelText }}
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={onStartCall}
+          className="px-4 py-2 rounded-full"
+          style={{ backgroundColor: cp.startBg, color: cp.startText }}
+        >
+          Start Call
+        </button>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 export default CallPopup;

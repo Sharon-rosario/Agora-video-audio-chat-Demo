@@ -1,171 +1,203 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import ChatPanel from '../components/ChatPanel';
-import AudioPanel from '../components/AudioPanel';
-import VideoPanel from '../components/VideoPanel';
-import CallPopup from '../components/CallPopup';
+import ChatPanel   from '../components/ChatPanel';
+import AudioPanel  from '../components/AudioPanel';
+import VideoPanel  from '../components/VideoPanel';
+import CallPopup   from '../components/CallPopup';
+import { ConsultationTheme } from '../constants/theme';
+
+/* ------------------------------------------------------------------ */
+/* Tiny helper: icon button with token-based hover colour              */
+const IconButton = ({ onClick, children }) => {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="p-2 rounded-full"
+      style={{ backgroundColor: hover ? ConsultationTheme.headerHover : 'transparent' }}
+    >
+      {children}
+    </button>
+  );
+};
+/* ------------------------------------------------------------------ */
 
 const Consultation = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate             = useNavigate();
+  const location             = useLocation();
+
   const [patientName, setPatientName] = useState('Unknown');
   const [activePanel, setActivePanel] = useState('chat');
-  const [showPopup, setShowPopup] = useState(false);
-  const [callType, setCallType] = useState(null);
+  const [showPopup,  setShowPopup]    = useState(false);
+  const [callType,   setCallType]     = useState(null);
+
   const [splitPosition, setSplitPosition] = useState(40);
-  const dividerRef = useRef(null);
-  const containerRef = useRef(null);
+  const dividerRef    = useRef(null);
+  const containerRef  = useRef(null);
   const isDraggingRef = useRef(false);
 
+  /* ───────────── pick patient name from router state ───────────── */
   useEffect(() => {
-    const state = location.state;
-    if (state?.patientName) {
-      setPatientName(state.patientName);
-    }
+    if (location.state?.patientName) setPatientName(location.state.patientName);
   }, [location]);
 
+  /* ───────────── divider drag handlers ───────────── */
   useEffect(() => {
-    // Set up event listeners for dragging
-    const handleMouseMove = (e) => {
+    const move = (e) => {
       if (!isDraggingRef.current) return;
-      
-      const container = containerRef.current;
-      if (!container) return;
-      
-      const containerRect = container.getBoundingClientRect();
-      const newPosition = ((e.clientX - containerRect.left) / containerRect.width) * 100;
-      
-      // Limit the drag range (10% to 90%)
-      const limitedPosition = Math.min(Math.max(newPosition, 10), 90);
-      setSplitPosition(limitedPosition);
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const percent = ((e.clientX - rect.left) / rect.width) * 100;
+      setSplitPosition(Math.min(Math.max(percent, 10), 90)); // clamp 10-90 %
     };
-    
-    const handleMouseUp = () => {
+
+    const stop = () => {
       isDraggingRef.current = false;
-      document.body.style.cursor = 'default';
-      document.body.style.userSelect = 'auto';
+      document.body.style.cursor      = 'default';
+      document.body.style.userSelect  = 'auto';
     };
-    
+
     if (activePanel === 'audio' || activePanel === 'video') {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('mousemove', move);
+      document.addEventListener('mouseup',   stop);
     }
-    
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup',   stop);
     };
   }, [activePanel]);
 
-  const handleMouseDown = (e) => {
-    isDraggingRef.current = true;
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none'; // Prevent text selection while dragging
+  const startDrag = (e) => {
+    isDraggingRef.current         = true;
+    document.body.style.cursor    = 'col-resize';
+    document.body.style.userSelect= 'none';
     e.preventDefault();
   };
 
+  /* ───────────── call control helpers ───────────── */
   const handleCallAction = (type) => {
     setCallType(type);
     setShowPopup(true);
   };
+  const startCall = () => { setActivePanel(callType); setShowPopup(false); };
+  const endCall   = () => { setActivePanel('chat');  };
 
-  const startCall = () => {
-    setActivePanel(callType);
-    setShowPopup(false);
-  };
-
-  const endCall = () => {
-    setActivePanel('chat');
-  };
-
+  /* ───────────── render ───────────── */
   return (
-    <div className="h-screen bg-[#ECE5DD] flex flex-col">
+    <div
+      className="h-screen flex flex-col"
+      style={{ backgroundColor: ConsultationTheme.pageBg }}
+    >
       {/* Header */}
-      <div className="bg-[#075E54] text-white p-4 flex items-center justify-between shadow-md fixed top-0 left-0 right-0 z-10">
+      <div
+        className="fixed top-0 left-0 right-0 z-10 p-4 flex items-center justify-between shadow-md"
+        style={{ backgroundColor: ConsultationTheme.headerBg, color: ConsultationTheme.headerText }}
+      >
+        {/* left side: back arrow + avatar + name */}
         <div className="flex items-center">
-          <button className="mr-4" onClick={() => navigate(-1)}>
+          <IconButton onClick={() => navigate(-1)}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
             </svg>
-          </button>
-          <div className="w-10 h-10 bg-[#B0BEC5] rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold text-lg">{patientName[0]}</span>
+          </IconButton>
+
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center ml-2"
+            style={{ backgroundColor: ConsultationTheme.avatarBg }}
+          >
+            <span className="font-semibold text-lg" style={{ color: ConsultationTheme.headerText }}>
+              {patientName[0]}
+            </span>
           </div>
-          <h2 className="ml-3 text-lg font-medium text-white">{patientName}</h2>
+
+          <h2 className="ml-3 text-lg font-medium">{patientName}</h2>
         </div>
+
+        {/* right side icon buttons */}
         <div className="flex space-x-4">
-          <button className="p-2 hover:bg-[#064e45] rounded-full">
+          <IconButton>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-          </button>
-          <button className="p-2 hover:bg-[#064e45] rounded-full">
+          </IconButton>
+
+          <IconButton>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0
+                       002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0
+                       002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-          </button>
-          <button className="p-2 hover:bg-[#064e45] rounded-full" onClick={() => handleCallAction('audio')}>
+          </IconButton>
+
+          <IconButton onClick={() => handleCallAction('audio')}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0
+                       01.948.684l1.498 4.493a1 1 0
+                       01-.502 1.21l-2.257 1.13a11.042
+                       11.042 0 005.516 5.516l1.13-2.257a1
+                       1 0 011.21-.502l4.493 1.498a1 1
+                       0 01.684.949V19a2 2 0 01-2
+                       2h-1C9.716 21 3 14.284 3 6V5z" />
             </svg>
-          </button>
-          <button className="p-2 hover:bg-[#064e45] rounded-full" onClick={() => handleCallAction('video')}>
+          </IconButton>
+
+          <IconButton onClick={() => handleCallAction('video')}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                    d="M15 10l4.553-2.276A1 1 0
+                       0121 8.618v6.764a1 1 0
+                       01-1.447.894L15 14M5 18h8a2 2 0
+                       002-2V8a2 2 0 00-2-2H5a2 2 0
+                       00-2 2v8a2 2 0 002 2z" />
             </svg>
-          </button>
+          </IconButton>
         </div>
       </div>
 
-      {/* Consultation Body */}
-      <div 
+      {/* Body (chat + optional media panel) */}
+      <div
         ref={containerRef}
         className="flex-1 flex flex-row mt-16 relative overflow-hidden"
       >
-        {/* Chat Panel - full width by default, or dynamic width when in call */}
-        <div 
-          className="h-full p-4"
-          style={{
-            width: activePanel === 'chat' 
-              ? '100%' 
-              : `${splitPosition}%`
-          }}
-        >
+        {/* chat */}
+        <div className="h-full p-4" style={{ width: activePanel === 'chat' ? '100%' : `${splitPosition}%` }}>
           <ChatPanel />
         </div>
 
-        {/* Divider when in split mode */}
+        {/* draggable divider */}
         {(activePanel === 'audio' || activePanel === 'video') && (
-          <div 
+          <div
             ref={dividerRef}
-            className="w-2 my-4 bg-gray-300 rounded-xl hover:bg-gray-400 cursor-col-resize flex items-center justify-center"
-            onMouseDown={handleMouseDown}
+            className="w-2 my-4 rounded-xl cursor-col-resize flex items-center justify-center"
+            style={{ backgroundColor: ConsultationTheme.dividerBg }}
+            onMouseDown={startDrag}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = ConsultationTheme.dividerHoverBg}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ConsultationTheme.dividerBg}
           >
-            <div className="h-8 w-1 bg-gray-500 rounded"></div>
+            <div className="h-8 w-1 bg-gray-500 rounded" />
           </div>
         )}
 
-        {/* Media Panel - only shown when in call */}
+        {/* media panel */}
         {activePanel === 'audio' && (
-          <div 
-            className="h-full p-4"
-            style={{ width: `calc(100% - ${splitPosition}% - 0.5rem)` }}
-          >
+          <div className="h-full p-4" style={{ width: `calc(100% - ${splitPosition}% - 0.5rem)` }}>
             <AudioPanel onEndCall={endCall} />
           </div>
         )}
-        
         {activePanel === 'video' && (
-          <div 
-            className="h-full p-4"
-            style={{ width: `calc(100% - ${splitPosition}% - 0.5rem)` }}
-          >
+          <div className="h-full p-4" style={{ width: `calc(100% - ${splitPosition}% - 0.5rem)` }}>
             <VideoPanel onEndCall={endCall} />
           </div>
         )}
       </div>
 
-      {/* Call Popup */}
+      {/* popup */}
       {showPopup && (
         <CallPopup
           callType={callType}
