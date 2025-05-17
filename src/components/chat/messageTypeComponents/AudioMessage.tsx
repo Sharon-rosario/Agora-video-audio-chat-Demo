@@ -1,14 +1,78 @@
-import React from 'react';
-import {ChatTheme} from '../../../constants/theme';
+import React, { useState, useEffect } from 'react';
+import { ChatTheme } from '../../../constants/theme';
 
 const AudioMessage = ({ message }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  // Parse duration string like "02:30" → total seconds
+  const parseDurationToSeconds = (durationStr) => {
+    const [min, sec] = durationStr.split(':').map(Number);
+    return min * 60 + sec;
+  };
+
+  const totalDurationInSeconds = parseDurationToSeconds(message.content.duration);
+
+  // Format seconds as MM:SS
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  // Handle play/pause toggle
+  const togglePlay = () => {
+    if (!isPlaying) {
+      setCurrentTime(0); // reset on new play
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  // Simulate playback
+  useEffect(() => {
+    let animationFrameId: any = null;
+    let startTime: any = null;
+
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+
+      const elapsed = Math.floor((timestamp - startTime) / 1000);
+
+      if (elapsed < totalDurationInSeconds && isPlaying) {
+        setCurrentTime(elapsed);
+        animationFrameId = requestAnimationFrame(animate);
+      } else if (elapsed >= totalDurationInSeconds && isPlaying) {
+        setCurrentTime(totalDurationInSeconds);
+        setIsPlaying(false); // Auto-pause at end
+      }
+    };
+
+    if (isPlaying) {
+      animationFrameId = requestAnimationFrame(animate);
+    }
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [isPlaying, totalDurationInSeconds]);
+
   return (
     <div className="flex flex-col w-64">
       {/* Header */}
-      <div className="flex items-center mb-2">
-        <div className="p-2 rounded-full" style={{ backgroundColor: ChatTheme.audioBubbleBg }}>
-          <svg className="w-6 h-6" fill="none" stroke={ChatTheme.audioPrimary} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+      <div className="flex items-center ml-[6px] my-2">
+        <div className="p-2 rounded-full" style={{ backgroundColor: ChatTheme.audioIconBg }}>
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke={ChatTheme.audioIconFg}
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
+            />
           </svg>
         </div>
         <span className="ml-2 text-sm font-medium" style={{ color: ChatTheme.textPrimary }}>
@@ -19,34 +83,43 @@ const AudioMessage = ({ message }) => {
       {/* Player */}
       <div className="rounded-lg p-2 flex items-center" style={{ backgroundColor: ChatTheme.bubbleOthers }}>
         <button
-          className="w-8 h-8 rounded-full flex items-center justify-center mr-2 transition-colors"
-          style={{ backgroundColor: ChatTheme.audioPrimary }}
+          className="w-8 h-8 rounded-full flex items-center justify-center mr-2 hover:bg-blue-600 transition-colors"
+          style={{ backgroundColor: isPlaying ? ChatTheme.playBtnHover : ChatTheme.playBtnBg }}
+          onClick={togglePlay}
         >
           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z" />
+            <path d={isPlaying ? "M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" : "M8 5v14l11-7z"} />
           </svg>
         </button>
 
-        {/* Fake waveform */}
-        <div className="flex-1 h-8 flex items-center space-x-0.5">
+        {/* Fake Waveform */}
+        <div className="flex-1 h-10 flex items-center space-x-0.5 pl-2">
           {Array.from({ length: 24 }).map((_, i) => {
-            const height = Math.sin(i * 0.5) * 16 + 5;
+            const baseHeight = Math.sin(i * 0.5) * 16 +20;
+            const animatedHeight = isPlaying ? (Math.sin(i * 2 + Date.now() / 200) * 4 + baseHeight) : baseHeight;
+
             return (
               <div
                 key={i}
                 className="w-1 rounded-full"
-                style={{ height: `${height}px`, backgroundColor: ChatTheme.audioSecondary }}
+                style={{
+                  height: `${animatedHeight}px`,
+                  backgroundColor: isPlaying ? ChatTheme.waveformBarActive || ChatTheme.waveformBar : ChatTheme.waveformBar,
+                }}
               />
             );
           })}
         </div>
 
+        {/* Timer: shows total duration when paused, current time while playing */}
         <span className="ml-2 text-xs font-medium" style={{ color: ChatTheme.timeStamp }}>
-          {message.content.duration}
+          {isPlaying ? formatTime(currentTime) : formatTime(totalDurationInSeconds)}
         </span>
       </div>
     </div>
   );
 };
+
+
 
 export default AudioMessage;

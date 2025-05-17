@@ -26,7 +26,7 @@ const dummyMessages = [
     { sender: 'You', type: 'doc', content: { url: 'diet_chart.docx', name: 'Diet_Chart.docx' }, time: '10:04 AM', tagged: true },
     { sender: 'Patient 1', type: 'text', content: 'Got it. Should I start this today?', time: '9:40 AM', tagged: false },
     { sender: 'You', type: 'text', content: 'Yes, start today and let me know how you feel tomorrow.', time: '9:42 AM', tagged: false },
-    { sender: 'Patient 1', type: 'audio', content: { url: 'audio2.mp3', duration: '0:30' }, time: '9:45 AM', tagged: false },
+    { sender: 'Patient 1', type: 'audio', content: { url: 'audio2.mp3', duration: '0:05' }, time: '9:45 AM', tagged: false },
     { sender: 'You', type: 'text', content: 'Thanks for the update. I’ll check in tomorrow.', time: '9:47 AM', tagged: false },
     { sender: 'Patient 1', type: 'text', content: 'Appreciate it, Dr. Smith!', time: '9:50 AM', tagged: false },
     { sender: 'Patient 1', type: 'text', content: 'I forgot to mention I had some nausea this morning.', time: '9:52 AM', tagged: false },

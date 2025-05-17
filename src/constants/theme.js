@@ -63,7 +63,7 @@ export const COLORS = {
   export const ChatTheme = {
     /* bubbles */
     bubbleMe:       COLORS.sent,
-    bubbleOthers:   COLORS.received,
+    // bubbleOthers:   COLORS.received,
   
     /* accents */
     taggedBorder:   '#3B82F6',
@@ -83,7 +83,13 @@ export const COLORS = {
     playBtnHover:   '#1D4ED8',
     waveformBar:    '#60A5FA',
     videoPlayBtnFg: '#2563EB',
-  
+  waveformBarActive: '#3B82F6',
+  progressBg:        '#E5E7EB', // Background of the progress bar
+  progressFill:      '#60A5FA', // Filled portion of the progress bar
+
+  bubbleOthers:      '#ffffff',
+
+
     /* file-type pills */
     fileTypes: {
       pdf:     { bg: '#FEE2E2', text: '#B91C1C' },
