@@ -17,7 +17,7 @@ const TextMessage = ({ message, onDelete, onTag, onReply }) => {
   }, []);
 
   return (
-    <div className="flex flex-col relative">
+    <div className="flex flex-col relative pr-5">
       <p className="text-sm" style={{ color: ChatTheme.textPrimary }}>
         {message.content}
       </p>
