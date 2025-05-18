@@ -4,12 +4,13 @@ import AudioMessage from './messageTypeComponents/AudioMessage.tsx';
 import VideoMessage from './messageTypeComponents/VideoMessage.tsx';
 import FileMessage from './messageTypeComponents/FileMessage.tsx';
 import DocMessage from './messageTypeComponents/DocMessage.tsx';
+import ImageMessage from './messageTypeComponents/ImageMessage.tsx';
+import AudioCallMessage from './messageTypeComponents/AudioCallMessage.tsx'; // New import
+import VideoCallMessage from './messageTypeComponents/VideoCallMessage.tsx'; // New import
+import { ChatTheme } from '../../constants/theme.js';
 
-// Single‑source design tokens 👉 edit src/ChatTheme.js to reskin the whole chat
-import {ChatTheme} from '../../constants/theme.js';
-
-const MessageWrapper = ({ message, onReply, onDelete }) => {
-  const { sender, type, tagged, timestamp } = message;
+const MessageWrapper = ({ message, onReply, onDelete, allMessages }) => {
+  const { sender, type, tagged, time, replyTo } = message;
   const isYou = sender === 'You';
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -25,14 +26,17 @@ const MessageWrapper = ({ message, onReply, onDelete }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Find the replied-to message
+  const repliedMessage = replyTo ? allMessages.find((msg) => msg.id === replyTo) : null;
+
   // Layout & utility classes stay as Tailwind — colours come from the ChatTheme object
   const baseClass = 'mb-1 p-3 rounded-xl shadow-sm max-w-[70%] relative';
   const alignmentClass = isYou ? 'ml-auto' : '';
+  const taggedStyle = tagged ? { borderLeft: `4px solid ${ChatTheme.taggedBorder}` } : {};
 
-  // Inline style so that switching ChatTheme objects recolours every bubble instantly
   const bubbleStyle = {
     backgroundColor: isYou ? ChatTheme.bubbleMe : ChatTheme.bubbleOthers,
-    ...(tagged ? { borderLeft: `4px solid ${ChatTheme.taggedBorder}` } : {}),
+    ...taggedStyle,
   };
 
   const getAvatar = () => {
@@ -40,17 +44,12 @@ const MessageWrapper = ({ message, onReply, onDelete }) => {
       return 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg';
     } else {
       const avatarMap = {
-        'Dr. Smith':
-          'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-2695-fe0f.svg',
-        'Nurse Johnson':
-          'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f469-200d-2695-fe0f.svg',
-        'Dr. Williams':
-          'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f468-200d-2695-fe0f.svg',
-        Receptionist:
-          'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-1f4bc.svg',
+        'Dr. Smith': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-2695-fe0f.svg',
+        'Nurse Johnson': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f469-200d-2695-fe0f.svg',
+        'Dr. Williams': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f468-200d-2695-fe0f.svg',
+        'Receptionist': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-1f4bc.svg',
       };
-      return avatarMap[sender] ||
-        'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg';
+      return avatarMap[sender] || 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg';
     }
   };
 
@@ -71,9 +70,42 @@ const MessageWrapper = ({ message, onReply, onDelete }) => {
     case 'doc':
       MessageComponent = DocMessage;
       break;
+    case 'image':
+      MessageComponent = ImageMessage;
+      break;
+    case 'audioCall': // Add support for audioCall type
+      MessageComponent = AudioCallMessage;
+      break;
+    case 'videoCall': // Add support for videoCall type
+      MessageComponent = VideoCallMessage;
+      break;
     default:
       MessageComponent = TextMessage;
   }
+
+  // Generate a preview for the replied-to message
+  const getReplyPreview = () => {
+    if (!repliedMessage) return null;
+
+    const previewContent = repliedMessage.type === 'text'
+      ? repliedMessage.content.length > 20
+        ? `${repliedMessage.content.substring(0, 20)}…`
+        : repliedMessage.content
+      : repliedMessage.type === 'image'
+      ? 'Image'
+      : repliedMessage.type === 'audioCall'
+      ? 'Audio Call'
+      : repliedMessage.type === 'videoCall'
+      ? 'Video Call'
+      : repliedMessage.type.charAt(0).toUpperCase() + repliedMessage.type.slice(1);
+
+    return (
+      <div className="mb-2 p-2 rounded-lg border-l-4 border-gray-400 bg-gray-100">
+        <p className="text-xs font-medium text-gray-700">{repliedMessage.sender}</p>
+        <p className="text-xs text-gray-600">{previewContent}</p>
+      </div>
+    );
+  };
 
   return (
     <div className={`flex items-end mb-4 ${isYou ? 'justify-end' : 'justify-start'}`}>
@@ -94,19 +126,22 @@ const MessageWrapper = ({ message, onReply, onDelete }) => {
           <p className="text-xs font-medium text-gray-700 mb-1">{sender}</p>
         )}
 
+        {/* Reply preview */}
+        {replyTo && getReplyPreview()}
+
         <MessageComponent message={message} />
 
         {/* Timestamp & menu */}
         <div className="flex items-center justify-end mt-3 text-xs" style={{ color: ChatTheme.timeStamp }}>
-          <span>{timestamp || '12:45 PM'}</span>
+          <span>{time || '12:45 PM'}</span>
 
-          {/* 3‑dot menu */}
+          {/* 3-dot menu */}
           <div className="relative ml-1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="text-[15px] hover:text-gray-800 focus:outline-none"
             >
-              &#8942;
+              ⋮
             </button>
 
             {menuOpen && (
