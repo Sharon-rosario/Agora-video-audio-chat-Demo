@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import ChatPanel   from '../components/ChatPanel';
-import AudioPanel  from '../components/AudioPanel';
-import VideoPanel  from '../components/VideoPanel';
-import CallPopup   from '../components/CallPopup';
+import ChatPanel from '../components/ChatPanel';
+import AudioPanel from '../components/AudioPanel';
+import VideoPanel from '../components/VideoPanel';
+import CallPopup from '../components/CallPopup';
+import CallReceiverPopup from '../components/CallReceiverPopup.tsx';
 import { ConsultationTheme } from '../constants/theme';
 
-/* ------------------------------------------------------------------ */
-/* Tiny helper: icon button with token-based hover colour              */
 const IconButton = ({ onClick, children }) => {
   const [hover, setHover] = useState(false);
   return (
@@ -22,28 +21,41 @@ const IconButton = ({ onClick, children }) => {
     </button>
   );
 };
-/* ------------------------------------------------------------------ */
 
-const Consultation = () => {
-  const navigate             = useNavigate();
-  const location             = useLocation();
+const Consultation = ({ socket }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [patientName, setPatientName] = useState('Unknown');
   const [activePanel, setActivePanel] = useState('chat');
-  const [showPopup,  setShowPopup]    = useState(false);
-  const [callType,   setCallType]     = useState(null);
+  const [showPopup, setShowPopup] = useState(false);
+  const [callType, setCallType] = useState(null);
+  const [incomingCall, setIncomingCall] = useState(null);
+  const [currentCall, setCurrentCall] = useState(null);
 
   const [splitPosition, setSplitPosition] = useState(40);
-  const dividerRef    = useRef(null);
-  const containerRef  = useRef(null);
+  const dividerRef = useRef(null);
+  const containerRef = useRef(null);
   const isDraggingRef = useRef(false);
 
-  /* ───────────── pick patient name from router state ───────────── */
   useEffect(() => {
     if (location.state?.patientName) setPatientName(location.state.patientName);
   }, [location]);
 
-  /* ───────────── divider drag handlers ───────────── */
+  useEffect(() => {
+    if (socket) {
+      socket.on('incoming_call', (data) => {
+        console.log('Incoming call:', data);
+        setIncomingCall(data);
+        console.log('incomingCall state set to:', data);
+      });
+
+      return () => {
+        socket.off('incoming_call');
+      };
+    }
+  }, [socket]);
+
   useEffect(() => {
     const move = (e) => {
       if (!isDraggingRef.current) return;
@@ -51,52 +63,99 @@ const Consultation = () => {
       if (!rect) return;
 
       const percent = ((e.clientX - rect.left) / rect.width) * 100;
-      setSplitPosition(Math.min(Math.max(percent, 10), 90)); // clamp 10-90 %
+      setSplitPosition(Math.min(Math.max(percent, 10), 90));
     };
 
     const stop = () => {
       isDraggingRef.current = false;
-      document.body.style.cursor      = 'default';
-      document.body.style.userSelect  = 'auto';
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
     };
 
     if (activePanel === 'audio' || activePanel === 'video') {
       document.addEventListener('mousemove', move);
-      document.addEventListener('mouseup',   stop);
+      document.addEventListener('mouseup', stop);
     }
     return () => {
       document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup',   stop);
+      document.removeEventListener('mouseup', stop);
     };
   }, [activePanel]);
 
   const startDrag = (e) => {
-    isDraggingRef.current         = true;
-    document.body.style.cursor    = 'col-resize';
-    document.body.style.userSelect= 'none';
+    isDraggingRef.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
     e.preventDefault();
   };
 
-  /* ───────────── call control helpers ───────────── */
   const handleCallAction = (type) => {
     setCallType(type);
     setShowPopup(true);
   };
-  const startCall = () => { setActivePanel(callType); setShowPopup(false); };
-  const endCall   = () => { setActivePanel('chat');  };
 
-  /* ───────────── render ───────────── */
+  const startCall = () => {
+    setActivePanel(callType);
+    setShowPopup(false);
+  };
+
+  const handleAcceptCall = (callData) => {
+    socket.emit('call_status_update', {
+      callId: callData.callId,
+      status: 'accepted',
+      userId: 'doctor456',
+      startTime: new Date().toISOString(),
+    });
+    setActivePanel(callData.callType);
+    setCurrentCall(callData);
+    setIncomingCall(null);
+  };
+
+  const handleRejectCall = (callData) => {
+    socket.emit('call_status_update', {
+      callId: callData.callId,
+      status: 'rejected',
+      userId: 'doctor456',
+    });
+    setIncomingCall(null);
+  };
+
+  const endCall = () => {
+    if (currentCall) {
+      socket.emit('call_status_update', {
+        callId: currentCall.callId,
+        status: 'ended',
+        userId: 'doctor456',
+        endTime: new Date().toISOString(),
+      });
+      setCurrentCall(null);
+    }
+    setActivePanel('chat');
+  };
+
   return (
     <div
       className="h-screen flex flex-col"
-      style={{ backgroundColor: ConsultationTheme.pageBg }}
+      style={{ backgroundColor: ConsultationTheme.pageBg, position: 'relative' }}
     >
-      {/* Header */}
+      <button
+        onClick={() =>
+          setIncomingCall({
+            callerId: 'patient123',
+            callType: 'video',
+            callId: 'call_001',
+            timestamp: '2025-05-18T17:52:03.730Z',
+          })
+        }
+        style={{ position: 'fixed', top: '100px', left: '10px', zIndex: 1001 }}
+      >
+        Test Popup
+      </button>
+
       <div
         className="fixed top-0 left-0 right-0 z-10 p-4 flex items-center justify-between shadow-md"
         style={{ backgroundColor: ConsultationTheme.headerBg, color: ConsultationTheme.headerText }}
       >
-        {/* left side: back arrow + avatar + name */}
         <div className="flex items-center">
           <IconButton onClick={() => navigate(-1)}>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,7 +175,6 @@ const Consultation = () => {
           <h2 className="ml-3 text-lg font-medium">{patientName}</h2>
         </div>
 
-        {/* right side icon buttons */}
         <div className="flex space-x-4">
           <IconButton>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,17 +218,14 @@ const Consultation = () => {
         </div>
       </div>
 
-      {/* Body (chat + optional media panel) */}
       <div
         ref={containerRef}
         className="flex-1 flex flex-row mt-16 relative overflow-hidden"
       >
-        {/* chat */}
         <div className="h-full p-4" style={{ width: activePanel === 'chat' ? '100%' : `${splitPosition}%` }}>
-          <ChatPanel />
+          <ChatPanel socket={socket} />
         </div>
 
-        {/* draggable divider */}
         {(activePanel === 'audio' || activePanel === 'video') && (
           <div
             ref={dividerRef}
@@ -184,7 +239,6 @@ const Consultation = () => {
           </div>
         )}
 
-        {/* media panel */}
         {activePanel === 'audio' && (
           <div className="h-full p-4" style={{ width: `calc(100% - ${splitPosition}% - 0.5rem)` }}>
             <AudioPanel onEndCall={endCall} />
@@ -197,12 +251,19 @@ const Consultation = () => {
         )}
       </div>
 
-      {/* popup */}
       {showPopup && (
         <CallPopup
           callType={callType}
           onStartCall={startCall}
           onCancel={() => setShowPopup(false)}
+        />
+      )}
+      {incomingCall && (
+        console.log('Rendering CallReceiverPopup with data:', incomingCall),
+        <CallReceiverPopup
+          callData={incomingCall}
+          onAccept={() => handleAcceptCall(incomingCall)}
+          onReject={() => handleRejectCall(incomingCall)}
         />
       )}
     </div>
