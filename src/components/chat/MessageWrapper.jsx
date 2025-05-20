@@ -5,11 +5,12 @@ import VideoMessage from './messageTypeComponents/VideoMessage.tsx';
 import FileMessage from './messageTypeComponents/FileMessage.tsx';
 import DocMessage from './messageTypeComponents/DocMessage.tsx';
 import ImageMessage from './messageTypeComponents/ImageMessage.tsx';
-import AudioCallMessage from './messageTypeComponents/AudioCallMessage.tsx'; // New import
-import VideoCallMessage from './messageTypeComponents/VideoCallMessage.tsx'; // New import
-import { ChatTheme } from '../../constants/theme.js';
+import AudioCallMessage from './messageTypeComponents/AudioCallMessage.tsx';
+import VideoCallMessage from './messageTypeComponents/VideoCallMessage.tsx';
+import CallRequestMessage from './messageTypeComponents/CallRequestMessage.tsx';
+import { CallRequestStyles, ChatTheme } from '../../constants/theme.js';
 
-const MessageWrapper = ({ message, onReply, onDelete, allMessages }) => {
+const MessageWrapper = ({ message, onReply, onDelete, allMessages, onAccept, onReject }) => {
   const { sender, type, tagged, time, replyTo } = message;
   const isYou = sender === 'You';
 
@@ -26,10 +27,8 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Find the replied-to message
   const repliedMessage = replyTo ? allMessages.find((msg) => msg.id === replyTo) : null;
 
-  // Layout & utility classes stay as Tailwind — colours come from the ChatTheme object
   const baseClass = 'mb-1 p-3 rounded-xl shadow-sm max-w-[70%] relative';
   const alignmentClass = isYou ? 'ml-auto' : '';
   const taggedStyle = tagged ? { borderLeft: `4px solid ${ChatTheme.taggedBorder}` } : {};
@@ -73,17 +72,19 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages }) => {
     case 'image':
       MessageComponent = ImageMessage;
       break;
-    case 'audioCall': // Add support for audioCall type
+    case 'audioCall':
       MessageComponent = AudioCallMessage;
       break;
-    case 'videoCall': // Add support for videoCall type
+    case 'videoCall':
       MessageComponent = VideoCallMessage;
+      break;
+    case 'callRequest':
+      MessageComponent = CallRequestMessage;
       break;
     default:
       MessageComponent = TextMessage;
   }
 
-  // Generate a preview for the replied-to message
   const getReplyPreview = () => {
     if (!repliedMessage) return null;
 
@@ -97,6 +98,8 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages }) => {
       ? 'Audio Call'
       : repliedMessage.type === 'videoCall'
       ? 'Video Call'
+      : repliedMessage.type === 'callRequest'
+      ? `${repliedMessage.content.callType.charAt(0).toUpperCase() + repliedMessage.content.callType.slice(1)} Call Request`
       : repliedMessage.type.charAt(0).toUpperCase() + repliedMessage.type.slice(1);
 
     return (
@@ -109,7 +112,6 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages }) => {
 
   return (
     <div className={`flex items-end mb-4 ${isYou ? 'justify-end' : 'justify-start'}`}>
-      {/* Avatar (left for others) */}
       {!isYou && (
         <div className="flex-shrink-0 mr-2">
           <img
@@ -120,39 +122,50 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages }) => {
         </div>
       )}
 
-      {/* Message bubble */}
       <div className={`${baseClass} ${alignmentClass}`} style={bubbleStyle}>
         {!isYou && (
           <p className="text-xs font-medium text-gray-700 mb-1">{sender}</p>
         )}
 
-        {/* Reply preview */}
         {replyTo && getReplyPreview()}
 
-        <MessageComponent message={message} />
+        <MessageComponent
+          message={message}
+          {...(type === 'callRequest' ? { onAccept, onReject } : {})}
+        />
 
-        {/* Timestamp & menu */}
-        <div className="flex items-center justify-end mt-3 text-xs" style={{ color: ChatTheme.timeStamp }}>
+        <div className="flex items-center justify-end mt-3 text-xs" style={{ color: CallRequestStyles.timestamp.color }}>
           <span>{time || '12:45 PM'}</span>
 
-          {/* 3-dot menu */}
           <div className="relative ml-1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="text-[15px] hover:text-gray-800 focus:outline-none"
+              className="text-[15px] focus:outline-none"
+              style={{
+                color: CallRequestStyles.menuButton.hoverColor, // Use hoverColor as default
+              }}
             >
               ⋮
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 mt-2 w-28 bg-white border p-2 rounded-xl shadow-lg z-50 text-sm">
+              <div
+                className="absolute right-0 mt-2 w-28 p-2 rounded-xl shadow-lg z-50 text-sm"
+                style={{
+                  backgroundColor: CallRequestStyles.menu.backgroundColor,
+                  border: `1px solid ${CallRequestStyles.menu.borderColor}`,
+                }}
+              >
                 <button
                   onClick={() => {
                     onReply?.(message);
                     setMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2 my-[1px] rounded hover:bg-gray-300"
-                  style={{ '--tw-bg-opacity': 1, backgroundColor: ChatTheme.hoverNeutral }}
+                  className="w-full text-left px-4 py-2 my-[1px] rounded transition-colors duration-200"
+                  style={{
+                    color: CallRequestStyles.menuItem.reply.color,
+                    backgroundColor: CallRequestStyles.menuItem.reply.hoverBackground, // Use hoverBackground as default
+                  }}
                 >
                   Reply
                 </button>
@@ -162,8 +175,11 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages }) => {
                     onDelete?.(message);
                     setMenuOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2 rounded text-red-600 hover:bg-gray-200"
-                  style={{ '--tw-bg-opacity': 1, backgroundColor: ChatTheme.hoverDanger }}
+                  className="w-full text-left px-4 py-2 rounded transition-colors duration-200"
+                  style={{
+                    color: CallRequestStyles.menuItem.delete.color,
+                    backgroundColor: CallRequestStyles.menuItem.delete.hoverBackground, // Use hoverBackground as default
+                  }}
                 >
                   Delete
                 </button>
@@ -173,7 +189,6 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages }) => {
         </div>
       </div>
 
-      {/* Avatar (right for you) */}
       {isYou && (
         <div className="flex-shrink-0 ml-2">
           <img src={getAvatar()} alt="Your avatar" className="w-8 h-8 rounded-full" />

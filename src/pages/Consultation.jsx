@@ -138,19 +138,7 @@ const Consultation = ({ socket }) => {
       className="h-screen flex flex-col"
       style={{ backgroundColor: ConsultationTheme.pageBg, position: 'relative' }}
     >
-      <button
-        onClick={() =>
-          setIncomingCall({
-            callerId: 'patient123',
-            callType: 'video',
-            callId: 'call_001',
-            timestamp: '2025-05-18T17:52:03.730Z',
-          })
-        }
-        style={{ position: 'fixed', top: '100px', left: '10px', zIndex: 1001 }}
-      >
-        Test Popup
-      </button>
+    
 
       <div
         className="fixed top-0 left-0 right-0 z-10 p-4 flex items-center justify-between shadow-md"
