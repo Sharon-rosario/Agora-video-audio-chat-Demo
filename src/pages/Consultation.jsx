@@ -95,6 +95,15 @@ const Consultation = ({ socket }) => {
   };
 
   const startCall = () => {
+    const callId = `call_${Date.now()}`; // Generate a unique callId
+    socket.emit('call_status_update', {
+      callId,
+      callType,
+      status: 'initiated',
+      userId: 'doctor456',
+      startTime: new Date().toISOString(),
+    });
+    setCurrentCall({ callId, callType });
     setActivePanel(callType);
     setShowPopup(false);
   };
@@ -138,8 +147,6 @@ const Consultation = ({ socket }) => {
       className="h-screen flex flex-col"
       style={{ backgroundColor: ConsultationTheme.pageBg, position: 'relative' }}
     >
-    
-
       <div
         className="fixed top-0 left-0 right-0 z-10 p-4 flex items-center justify-between shadow-md"
         style={{ backgroundColor: ConsultationTheme.headerBg, color: ConsultationTheme.headerText }}
@@ -229,7 +236,12 @@ const Consultation = ({ socket }) => {
 
         {activePanel === 'audio' && (
           <div className="h-full p-4" style={{ width: `calc(100% - ${splitPosition}% - 0.5rem)` }}>
-            <AudioPanel onEndCall={endCall} />
+            <AudioPanel 
+              onEndCall={endCall} 
+              onSwitchToVideo={() => setActivePanel('video')} 
+              contactName={patientName} 
+              callId={currentCall?.callId} 
+            />
           </div>
         )}
         {activePanel === 'video' && (
