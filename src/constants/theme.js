@@ -159,7 +159,6 @@
  *  – For a clinical, professional feel suitable for medical communication apps
  * ========================================================================== */
 
-
   export const COLORS = {
     /* brand */
     primary: '#0077B5',          // LinkedIn blue
@@ -178,7 +177,7 @@
   
     /* chat surfaces */
     sent: '#E0F7FA',            // Light cyan (sent)
-    received: '#D3E2FF',        // Slightly darker than #FFFFFF for received messages
+    received: '#D0E2FF',        // Slightly darker than #FFFFFF for received messages
     bubbleBg: '#F3F4F6',        // Light grayish background for the container
     chatBg: '#F9FAFB',          // Almost-white background
   
