@@ -8,6 +8,7 @@ interface CallRequestMessageProps {
   onReject?: (message: Message) => void;
 }
 
+//@ts-ignore
 const CallRequestMessage: React.FC<CallRequestMessageProps> = ({ message, onAccept, onReject }) => {
   const { callType, status, callId } = message.content as {
     callType: 'audio' | 'video';
