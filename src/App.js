@@ -5,10 +5,12 @@ import Consultation from './pages/Consultation';
 import io from 'socket.io-client';
 
 // Initialize Socket.IO client
-const socket = io('http://localhost:8000', {
-// const socket = io('https://api.grannydr.com', {
-  transports: ['websocket'],
+const socket = io('http://192.168.1.8:8000', {
+  transports: ['websocket', 'polling'], // Allow fallback to polling
   autoConnect: false, // We'll connect manually in useEffect
+  timeout: 15000, // Match admin socket client timeout
+  reconnection: false, // Match admin socket client for testing
+  forceNew: true, // Match admin socket client
 });
 
 function App() {
@@ -16,11 +18,15 @@ function App() {
     // Connect to the Socket.IO server when the component mounts
     socket.connect();
 
-    // Log connection and register the doctor
+    // Log connection and register the admin
     socket.on('connect', () => {
       console.log('Connected to Socket.IO server');
-      // Hardcoding doctor's ID for now; replace with actual auth logic later
-      socket.emit('register', { userId: 'doctor456', role: 'doctor' });
+      // Register as admin
+      socket.emit('register', { userId: 'admin001', role: 'admin' });
+    });
+
+    socket.on('connect_error', (error) => {
+      console.log('❌ Admin connection error:', error.message);
     });
 
     // Cleanup: Disconnect when the component unmounts

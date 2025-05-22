@@ -6,6 +6,7 @@ import VideoPanel from '../components/VideoPanel';
 import CallPopup from '../components/CallPopup';
 import CallReceiverPopup from '../components/CallReceiverPopup.tsx';
 import { ConsultationTheme } from '../constants/theme';
+import { v4 as uuidv4 } from 'uuid';
 
 const IconButton = ({ onClick, children }) => {
   const [hover, setHover] = useState(false);
@@ -95,12 +96,27 @@ const Consultation = ({ socket }) => {
   };
 
   const startCall = () => {
-    const callId = `call_${Date.now()}`; // Generate a unique callId
+    const callId = `call_${Date.now()}`;
+    const callData = {
+      uuid: 'call_uuid_123456', // Static UUID for testing
+      doctorName: 'Dr. John Smith', // Static doctor name for testing
+      callType, // Audio or video, set by handleCallAction
+      channelName: 'consultation_channel_001', // Static channel name for testing
+      token: 'dummy_token_789xyz', // Static token for testing
+      callId, // Unique call ID
+      callerId: 'admin001', // Admin user ID
+      receiverId: 'doctor456', // Doctor user ID
+      status: 'initiated', // Initial call status
+      userId: 'admin001', // Admin user ID
+      startTime: new Date().toISOString(), // Call start time
+    };
+    socket.emit('incoming_call', callData);
+    console.log('📞 Admin initiated call:', callData);
     socket.emit('call_status_update', {
       callId,
       callType,
       status: 'initiated',
-      userId: 'doctor456',
+      userId: 'admin001',
       startTime: new Date().toISOString(),
     });
     setCurrentCall({ callId, callType });
@@ -112,7 +128,7 @@ const Consultation = ({ socket }) => {
     socket.emit('call_status_update', {
       callId: callData.callId,
       status: 'accepted',
-      userId: 'doctor456',
+      userId: 'admin001',
       startTime: new Date().toISOString(),
     });
     setActivePanel(callData.callType);
@@ -124,7 +140,7 @@ const Consultation = ({ socket }) => {
     socket.emit('call_status_update', {
       callId: callData.callId,
       status: 'rejected',
-      userId: 'doctor456',
+      userId: 'admin001',
     });
     setIncomingCall(null);
   };
@@ -134,7 +150,7 @@ const Consultation = ({ socket }) => {
       socket.emit('call_status_update', {
         callId: currentCall.callId,
         status: 'ended',
-        userId: 'doctor456',
+        userId: 'admin001',
         endTime: new Date().toISOString(),
       });
       setCurrentCall(null);
