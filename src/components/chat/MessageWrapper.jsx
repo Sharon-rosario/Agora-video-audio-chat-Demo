@@ -5,15 +5,11 @@ import VideoMessage from './messageTypeComponents/VideoMessage.tsx';
 import FileMessage from './messageTypeComponents/FileMessage.tsx';
 import DocMessage from './messageTypeComponents/DocMessage.tsx';
 import ImageMessage from './messageTypeComponents/ImageMessage.tsx';
-import AudioCallMessage from './messageTypeComponents/AudioCallMessage.tsx';
-import VideoCallMessage from './messageTypeComponents/VideoCallMessage.tsx';
 import CallRequestMessage from './messageTypeComponents/CallRequestMessage.tsx';
 import { CallRequestStyles, ChatTheme } from '../../constants/theme.js';
 
 const MessageWrapper = ({ message, onReply, onDelete, allMessages, onAccept, onReject }) => {
-  const { sender, type, tagged, time, replyTo } = message;
-  const isYou = sender === 'You';
-
+  const { sender, type, tagged, timestamp, replyTo, callStatus } = message;
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -28,6 +24,7 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages, onAccept, onR
   }, []);
 
   const repliedMessage = replyTo ? allMessages.find((msg) => msg.id === replyTo) : null;
+  const isYou = sender === message.currentUserAgoraUid; // Assuming currentUserAgoraUid is passed or derived
 
   const baseClass = 'mb-1 p-3 rounded-xl shadow-sm max-w-[70%] relative';
   const alignmentClass = isYou ? 'ml-auto' : '';
@@ -43,12 +40,10 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages, onAccept, onR
       return 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg';
     } else {
       const avatarMap = {
-        'Dr. Smith': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-2695-fe0f.svg',
-        'Nurse Johnson': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f469-200d-2695-fe0f.svg',
-        'Dr. Williams': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f468-200d-2695-fe0f.svg',
-        'Receptionist': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-1f4bc.svg',
+        'doctor': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f9d1-200d-2695-fe0f.svg',
+        'patient': 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg',
       };
-      return avatarMap[sender] || 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg';
+      return avatarMap[message.senderRole] || 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/1f464.svg';
     }
   };
 
@@ -72,12 +67,6 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages, onAccept, onR
     case 'image':
       MessageComponent = ImageMessage;
       break;
-    case 'audioCall':
-      MessageComponent = AudioCallMessage;
-      break;
-    case 'videoCall':
-      MessageComponent = VideoCallMessage;
-      break;
     case 'callRequest':
       MessageComponent = CallRequestMessage;
       break;
@@ -94,12 +83,8 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages, onAccept, onR
         : repliedMessage.content
       : repliedMessage.type === 'image'
       ? 'Image'
-      : repliedMessage.type === 'audioCall'
-      ? 'Audio Call'
-      : repliedMessage.type === 'videoCall'
-      ? 'Video Call'
       : repliedMessage.type === 'callRequest'
-      ? `${repliedMessage.content.callType.charAt(0).toUpperCase() + repliedMessage.content.callType.slice(1)} Call Request`
+      ? `${repliedMessage.content.callType?.charAt(0).toUpperCase() + repliedMessage.content.callType?.slice(1)} Call Request`
       : repliedMessage.type.charAt(0).toUpperCase() + repliedMessage.type.slice(1);
 
     return (
@@ -130,20 +115,18 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages, onAccept, onR
         {replyTo && getReplyPreview()}
 
         <MessageComponent
-          message={message}
+          message={{ ...message, callStatus }}
           {...(type === 'callRequest' ? { onAccept, onReject } : {})}
         />
 
         <div className="flex items-center justify-end mt-3 text-xs" style={{ color: CallRequestStyles.timestamp.color }}>
-          <span>{time || '12:45 PM'}</span>
+          <span>{timestamp}</span>
 
           <div className="relative ml-1" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(!menuOpen)}
               className="text-[15px] focus:outline-none"
-              style={{
-                color: CallRequestStyles.menuButton.hoverColor, // Use hoverColor as default
-              }}
+              style={{ color: CallRequestStyles.menuButton.hoverColor }}
             >
               ⋮
             </button>
@@ -164,7 +147,7 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages, onAccept, onR
                   className="w-full text-left px-4 py-2 my-[1px] rounded transition-colors duration-200"
                   style={{
                     color: CallRequestStyles.menuItem.reply.color,
-                    backgroundColor: CallRequestStyles.menuItem.reply.hoverBackground, // Use hoverBackground as default
+                    backgroundColor: CallRequestStyles.menuItem.reply.hoverBackground,
                   }}
                 >
                   Reply
@@ -178,7 +161,7 @@ const MessageWrapper = ({ message, onReply, onDelete, allMessages, onAccept, onR
                   className="w-full text-left px-4 py-2 rounded transition-colors duration-200"
                   style={{
                     color: CallRequestStyles.menuItem.delete.color,
-                    backgroundColor: CallRequestStyles.menuItem.delete.hoverBackground, // Use hoverBackground as default
+                    backgroundColor: CallRequestStyles.menuItem.delete.hoverBackground,
                   }}
                 >
                   Delete
