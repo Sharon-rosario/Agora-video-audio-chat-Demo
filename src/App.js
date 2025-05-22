@@ -6,6 +6,7 @@ import io from 'socket.io-client';
 
 // Initialize Socket.IO client
 const socket = io('http://localhost:8000', {
+// const socket = io('https://api.grannydr.com', {
   transports: ['websocket'],
   autoConnect: false, // We'll connect manually in useEffect
 });

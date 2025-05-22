@@ -1,70 +1,163 @@
+// In src/components/ChatPanel.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import MessageWrapper from './chat/MessageWrapper';
 import { ChatTheme } from '../constants/theme';
 import { dummyMessages } from '../data/conversation';
 
-const ChatPanel = ({ socket }) => {
-  const [messages, setMessages] = useState(dummyMessages); // Dynamic message state
+const ChatPanel = ({ socket, onCallRequestAccepted }) => {
+  const [messages, setMessages] = useState(dummyMessages);
   const chatEndRef = useRef(null);
 
-  // Auto-scroll to the bottom when messages update
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Set up Socket.IO event listeners
+  useEffect(() => {
+    if ('Notification' in window) {
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission().then((permission) => {
+          if (permission === 'granted') {
+            console.log('Notification permission granted');
+          } else {
+            console.log('Notification permission denied');
+          }
+        });
+      }
+    } else {
+      console.log('This browser does not support notifications');
+    }
+  }, []);
+
   useEffect(() => {
     if (socket) {
-      // Listen for live messages
       socket.on('live_message', (data) => {
         const { senderId, message, timestamp } = data;
         const newMessage = {
-          id: Date.now().toString(), // Unique ID for the message
+          id: Date.now().toString(),
           sender: senderId,
-          type: 'text', // Assuming text messages
+          type: 'text',
           content: message,
           time: new Date(timestamp).toLocaleTimeString(),
           tagged: false,
         };
         setMessages((prevMessages) => [...prevMessages, newMessage]);
+
+        if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
+          const notification = new Notification(`New Message from ${senderId}`, {
+            body: message,
+            icon: '/logo.svg',
+            timestamp: new Date(timestamp).getTime(),
+          });
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+        }
       });
 
-      // Listen for call status updates
       socket.on('call_status_update', (data) => {
         const { callId, status, startTime, endTime, callType } = data;
         const messageType = callType === 'audio' ? 'audioCall' : 'videoCall';
         const newMessage = {
           id: Date.now().toString(),
-          sender: 'System', // System-generated message
+          sender: 'System',
           type: messageType,
           content: { status, startTime, endTime },
           time: new Date().toLocaleTimeString(),
           tagged: false,
         };
         setMessages((prevMessages) => [...prevMessages, newMessage]);
+
+        if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
+          const notification = new Notification(`Call Update (${callType})`, {
+            body: `Call ${callId} status: ${status}`,
+            icon: '/logo.svg',
+            timestamp: startTime ? new Date(startTime).getTime() : Date.now(),
+          });
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+        }
       });
 
-      // Cleanup listeners on unmount
+      socket.on('call_request', (data) => {
+        const { callerId, callType, callId, timestamp } = data;
+        const newMessage = {
+          id: Date.now().toString(),
+          sender: callerId,
+          type: 'callRequest',
+          content: { callType, callId, status: 'Pending' },
+          time: new Date(timestamp).toLocaleTimeString(),
+          tagged: false,
+        };
+        setMessages((prevMessages) => [...prevMessages, newMessage]);
+
+        if (document.visibilityState !== 'visible' && Notification.permission === 'granted') {
+          const notification = new Notification(`Incoming ${callType} Call Request`, {
+            body: `From ${callerId} (Call ID: ${callId})`,
+            icon: '/logo.svg',
+            timestamp: new Date(timestamp).getTime(),
+          });
+          notification.onclick = () => {
+            window.focus();
+            notification.close();
+          };
+        }
+      });
+
       return () => {
         socket.off('live_message');
         socket.off('call_status_update');
+        socket.off('call_request');
       };
     }
   }, [socket]);
 
   const handleReply = (message) => {
     console.log('Replying to:', message);
-    // Implement reply logic here (e.g., set state to compose a reply)
+    // Implement reply logic here
   };
 
   const handleDelete = (message) => {
     console.log('Deleting:', message);
-    // Implement delete logic here (e.g., filter out the message)
+    // Implement delete logic here
+  };
+
+  const handleAcceptCallRequest = (message) => {
+    const { callId, callType } = message.content;
+    socket.emit('call_request_response', {
+      callId,
+      response: 'accepted',
+      userId: 'doctor456', // Replace with actual user ID
+    });
+
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg.id === message.id ? { ...msg, content: { ...msg.content, status: 'Accepted' } } : msg
+      )
+    );
+
+    onCallRequestAccepted({ callId, callType, callerId: message.sender });
+  };
+
+  const handleRejectCallRequest = (message) => {
+    const { callId } = message.content;
+    socket.emit('call_request_response', {
+      callId,
+      response: 'rejected',
+      userId: 'doctor456', // Replace with actual user ID
+    });
+
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg.id === message.id ? { ...msg, content: { ...msg.content, status: 'Rejected' } } : msg
+      )
+    );
   };
 
   return (
     <div className="flex flex-col h-full">
-      {/* Chat area */}
       <div
         className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200 hover:scrollbar-thumb-gray-500"
         style={{ backgroundColor: ChatTheme.panelBg }}
@@ -75,22 +168,21 @@ const ChatPanel = ({ socket }) => {
             message={msg}
             onReply={handleReply}
             onDelete={handleDelete}
-            allMessages={messages} // Updated to use dynamic messages
+            allMessages={messages}
+            onAccept={msg.type === 'callRequest' ? handleAcceptCallRequest : undefined}
+            onReject={msg.type === 'callRequest' ? handleRejectCallRequest : undefined}
           />
         ))}
         <div ref={chatEndRef} />
       </div>
 
-      {/* Composer */}
       <div className="p-3 flex items-center shadow-md" style={{ backgroundColor: ChatTheme.footerBg }}>
         <input
           type="text"
           placeholder="Type a message…"
           className="flex-1 bg-white rounded-full px-4 py-2 text-sm focus:outline-none shadow-sm"
         />
-        {/* Actions */}
         <button className="p-2 mx-2 text-gray-500 hover:text-gray-700">
-          {/* Attachment icon */}
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -101,7 +193,6 @@ const ChatPanel = ({ socket }) => {
           </svg>
         </button>
         <button className="p-2 text-gray-500 hover:text-gray-700">
-          {/* Mic icon */}
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
@@ -112,7 +203,6 @@ const ChatPanel = ({ socket }) => {
           </svg>
         </button>
         <button className="p-2 text-gray-500 hover:text-gray-700">
-          {/* Send icon */}
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"

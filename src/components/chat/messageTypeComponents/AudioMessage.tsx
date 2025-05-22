@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { ChatTheme } from '../../../constants/theme';
 
 const AudioMessage = ({ message }) => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -30,8 +29,8 @@ const AudioMessage = ({ message }) => {
 
   // Simulate playback
   useEffect(() => {
-    let animationFrameId: any = null;
-    let startTime: any = null;
+    let animationFrameId : any = null;
+    let startTime : any = null;
 
     const animate = (timestamp) => {
       if (!startTime) startTime = timestamp;
@@ -59,32 +58,19 @@ const AudioMessage = ({ message }) => {
   return (
     <div className="flex flex-col w-64">
       {/* Header */}
-      <div className="flex items-center ml-[6px] my-2">
-        <div className="p-2 rounded-full" style={{ backgroundColor: ChatTheme.audioIconBg }}>
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke={ChatTheme.audioIconFg}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
-            />
+      <div className="flex items-center mb-2">
+        <div className="bg-blue-100 p-2 rounded-full">
+          <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
           </svg>
         </div>
-        <span className="ml-2 text-sm font-medium" style={{ color: ChatTheme.textPrimary }}>
-          Voice Message
-        </span>
+        <span className="ml-2 text-sm font-medium text-gray-700">Voice Message</span>
       </div>
 
-      {/* Player */}
-      <div className="rounded-lg p-2 flex items-center" style={{ backgroundColor: ChatTheme.bubbleOthers }}>
+      {/* Audio Player UI */}
+      <div className="bg-gray-100 rounded-lg p-2 flex items-center">
         <button
-          className="w-8 h-8 rounded-full flex items-center justify-center mr-2 hover:bg-blue-600 transition-colors"
-          style={{ backgroundColor: isPlaying ? ChatTheme.playBtnHover : ChatTheme.playBtnBg }}
+          className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-2 hover:bg-blue-600 transition-colors"
           onClick={togglePlay}
         >
           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -92,34 +78,31 @@ const AudioMessage = ({ message }) => {
           </svg>
         </button>
 
-        {/* Fake Waveform */}
-        <div className="flex-1 h-10 flex items-center space-x-0.5 pl-2">
+        {/* Waveform visualization */}
+        <div className="flex-1 h-8 flex items-center space-x-0.5">
           {Array.from({ length: 24 }).map((_, i) => {
-            const baseHeight = Math.sin(i * 0.5) * 16 +20;
-            const animatedHeight = isPlaying ? (Math.sin(i * 2 + Date.now() / 200) * 4 + baseHeight) : baseHeight;
+            const baseHeight = Math.sin(i * 0.5) * 16 + 20;
+            const animatedHeight = isPlaying
+              ? Math.sin(i * 2 + Date.now() / 200) * 4 + baseHeight
+              : baseHeight;
 
             return (
               <div
                 key={i}
-                className="w-1 rounded-full"
-                style={{
-                  height: `${animatedHeight}px`,
-                  backgroundColor: isPlaying ? ChatTheme.waveformBarActive || ChatTheme.waveformBar : ChatTheme.waveformBar,
-                }}
+                className="w-1 bg-blue-400 rounded-full"
+                style={{ height: `${animatedHeight}px` }}
               />
             );
           })}
         </div>
 
-        {/* Timer: shows total duration when paused, current time while playing */}
-        <span className="ml-2 text-xs font-medium" style={{ color: ChatTheme.timeStamp }}>
-          {isPlaying ? formatTime(currentTime) : formatTime(totalDurationInSeconds)}
+        {/* Timer */}
+        <span className="ml-2 text-xs font-medium text-gray-600">
+          {isPlaying ? formatTime(currentTime) : message.content.duration}
         </span>
       </div>
     </div>
   );
 };
-
-
 
 export default AudioMessage;

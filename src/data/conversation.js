@@ -92,6 +92,24 @@ export const dummyMessages = [
   { id: '68', sender: 'You', type: 'videoCall', content: { status: 'Rejected' }, time: '10:03 PM', tagged: false, replyTo: '67' },
   { id: '69', sender: 'Patient 1', type: 'text', content: 'Sorry, I’m too tired for a call. Can we do it tomorrow?', time: '10:05 PM', tagged: false, replyTo: '68' },
   { id: '70', sender: 'You', type: 'text', content: 'Of course, let’s schedule it for tomorrow morning.', time: '10:10 PM', tagged: true, replyTo: '69' },
-  { id: '71', sender: 'Patient 1', type: 'text', content: 'Sounds good. Good night!', time: '10:15 PM', tagged: false, replyTo: '70' },
-  { id: '72', sender: 'You', type: 'text', content: 'Good night! Feel better.', time: '10:20 PM', tagged: false, replyTo: '71' },
+  // Add callRequest message here
+  { 
+    id: '71', 
+    sender: 'Patient 1', 
+    type: 'callRequest', 
+    content: { callType: 'video', callId: 'call_123', status: 'Pending' }, 
+    time: '10:12 PM', 
+    tagged: false 
+  },
+  // Additional callRequest for testing
+  { 
+    id: '72', 
+    sender: 'Patient 1', 
+    type: 'callRequest', 
+    content: { callType: 'audio', callId: 'call_124', status: 'Pending' }, 
+    time: '10:14 PM', 
+    tagged: false 
+  },
+  { id: '73', sender: 'Patient 1', type: 'text', content: 'Sounds good. Good night!', time: '10:15 PM', tagged: false, replyTo: '70' },
+  { id: '74', sender: 'You', type: 'text', content: 'Good night! Feel better.', time: '10:20 PM', tagged: false, replyTo: '73' },
 ];
