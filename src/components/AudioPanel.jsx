@@ -6,7 +6,7 @@ import { COLORS, CALL_STATES, formatTime } from '../constants/theme';
 // Hardcoded Agora credentials
 const AGORA_APP_ID = 'a77f0a34caba451f8194ea8d59745dc8';
 const AGORA_CHANNEL_NAME = 'Agora-test';
-const AGORA_TEMP_TOKEN = '007eJxTYGDQ/52xtvwt/79PzMv5kpNM5or/7F9ZbPhR89adzaX/nSMUGBLNzdMMEo1NkhOTEk1MDdMsDC1NUhMtUkwtzU1MU5ItXtTqZDQEMjLstxdjYmSAQBCfi8ExPb8oUbcktbiEgQEAVFYiQA==';
+const AGORA_TEMP_TOKEN = '007eJxTYNjw4lNK/LGauxJBN+MrVblM5wsJ1IdvW3RZNWrrtoo5RiIKDInm5mkGicYmyYlJiSamhmkWhpYmqYkWKaaW5iamKckWCmIGGQ2BjAxfuz4wMjJAIIjPxeCYnl+UqFuSWlzCwAAA698g8g==';
 
 const AudioPanel = ({ onEndCall, contactName = "John Doe" }) => {
   const [callState, setCallState] = useState(CALL_STATES.RINGING);

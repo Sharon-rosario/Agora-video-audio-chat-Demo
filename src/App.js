@@ -5,7 +5,7 @@ import Consultation from './pages/Consultation';
 import io from 'socket.io-client';
 
 // Initialize Socket.IO client
-const socket = io('http://192.168.1.8:8000', {
+const socket = io('http://192.168.29.140:8000', {
   transports: ['websocket', 'polling'], // Allow fallback to polling
   autoConnect: false, // We'll connect manually in useEffect
   timeout: 15000, // Match admin socket client timeout

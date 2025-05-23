@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import AgoraRTC from 'agora-rtc-sdk-ng';
 import { Phone, Video, VideoOff, Mic, MicOff, RotateCcw } from 'lucide-react';
 import { COLORS, CALL_STATES, formatTime } from '../constants/theme';
-
+// import { AGORA_APP_ID, AGORA_CHANNEL_NAME, AGORA_TEMP_TOKEN } from '../utils/config';
 // Hardcoded Agora credentials
 const AGORA_APP_ID = 'a77f0a34caba451f8194ea8d59745dc8';
 const AGORA_CHANNEL_NAME = 'Agora-test';
-const AGORA_TEMP_TOKEN = '007eJxTYGDQ/52xtvwt/79PzMv5kpNM5or/7F9ZbPhR89adzaX/nSMUGBLNzdMMEo1NkhOTEk1MDdMsDC1NUhMtUkwtzU1MU5ItXtTqZDQEMjLstxdjYmSAQBCfi8ExPb8oUbcktbiEgQEAVFYiQA==';
+const AGORA_TEMP_TOKEN = '007eJxTYNjw4lNK/LGauxJBN+MrVblM5wsJ1IdvW3RZNWrrtoo5RiIKDInm5mkGicYmyYlJiSamhmkWhpYmqYkWKaaW5iamKckWCmIGGQ2BjAxfuz4wMjJAIIjPxeCYnl+UqFuSWlzCwAAA698g8g==';
 
 const VideoPanel = ({ onEndCall, onSwitchToAudio, contactName = "John Doe" }) => {
   const [callState, setCallState] = useState(CALL_STATES.RINGING);
