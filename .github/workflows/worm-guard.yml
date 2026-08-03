@@ -1,0 +1,99 @@
+name: worm-guard
+
+# Blocks the git-config-injection worm at the door. Runs on every push and PR.
+# Scans ALL tracked files — not just configs — because this worm has been
+# observed in src/routes/*.js and in fabricated .woff2 assets, which a
+# config-only check misses entirely.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for worm indicators
+        shell: bash
+        run: |
+          set -uo pipefail
+          fail=0
+          note() { echo "::error file=$1::$2"; fail=1; }
+
+          # Everything git tracks, excluding vendored trees.
+          mapfile -d '' FILES < <(git ls-files -z | grep -zvE '(^|/)(node_modules|dist|build|\.next|vendor)/')
+
+          for f in "${FILES[@]}"; do
+            [ -f "$f" ] || continue
+
+            # Skip this workflow and any documentation that legitimately
+            # discusses the indicators (security write-ups, scanners).
+            case "$f" in
+              .github/workflows/worm-guard.yml|*worm-guard*|*WORM*|*SECURITY*) continue ;;
+              *.md) continue ;;
+            esac
+
+            # 1. The payload: a long whitespace pad immediately followed by the
+            #    bootstrap. The padding is what hides it off-screen to the right.
+            if grep -qE '[[:space:]]{50,}global\.(i=|r=require)' "$f"; then
+              note "$f" "worm payload: whitespace-padded global.i/global.r bootstrap"
+            fi
+
+            # 2. Obfuscation entry points.
+            if grep -qE "global\['!'\]|global\['_V'\]|global\['_t_t'\]" "$f"; then
+              note "$f" "worm obfuscation marker (global['!'] / ['_V'] / ['_t_t'])"
+            fi
+
+            # 3. C2 and blockchain endpoints.
+            if grep -qE '166\.88\.54\.158|trongrid\.io|bsc-dataseed|bsc-rpc\.publicnode' "$f"; then
+              note "$f" "known C2 / blockchain endpoint"
+            fi
+
+            # 4. Fabricated binary assets: font extension, non-font content.
+            case "$f" in
+              *.woff2|*.woff|*.ttf|*.otf)
+                magic=$(head -c 4 "$f" | od -An -tx1 | tr -d ' \n')
+                case "$magic" in
+                  774f4632|774f4646|00010000|4f54544f|74727565) ;;
+                  *) note "$f" "font file without valid magic bytes (found: ${magic:-empty}) — likely a dropper" ;;
+                esac
+                ;;
+            esac
+
+            # 5. A single absurdly long line is how the payload evades review.
+            if [ "$(wc -c < "$f")" -gt 4000 ]; then
+              case "$f" in
+                *.config.js|*.config.mjs|*.config.cjs|*.config.ts|postcss.*|tailwind.*|vite.*|eslint.*)
+                  longest=$(awk '{ if (length($0) > m) m = length($0) } END { print m+0 }' "$f")
+                  [ "$longest" -gt 2000 ] && note "$f" "config contains a ${longest}-char line — inspect for hidden payload"
+                  ;;
+              esac
+            fi
+          done
+
+          # 6. Worm artifacts, tracked or ignored.
+          for a in branch_structure.json temp_auto_push.bat temp_interactive_push.bat; do
+            git ls-files --error-unmatch "$a" >/dev/null 2>&1 && note "$a" "worm push-bot artifact is tracked"
+            grep -qxF "$a" .gitignore 2>/dev/null && note ".gitignore" "worm artifact entry '$a' present — the worm adds these to hide its push bot"
+          done
+
+          # 7. Editor auto-run persistence.
+          if [ -f .vscode/tasks.json ] && grep -qi 'folderOpen' .vscode/tasks.json; then
+            note ".vscode/tasks.json" "task with runOn: folderOpen — auto-executes when the folder is opened"
+          fi
+          if [ -f .vscode/settings.json ] && grep -q 'task.allowAutomaticTasks' .vscode/settings.json; then
+            note ".vscode/settings.json" "task.allowAutomaticTasks is set — enables silent auto-run"
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo ""
+            echo "worm-guard FAILED — indicators above. Do not merge."
+            exit 1
+          fi
+          echo "worm-guard: clean"
